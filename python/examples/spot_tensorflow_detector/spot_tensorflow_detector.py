@@ -106,6 +106,10 @@ def process_images(index, model_path, detection_classes, detection_threshold, ma
     num_processed_skips = 0
 
     while True:
+        # if(RAW_IMAGES_QUEUE.empty()):
+        #     # print("Raw images queue empty")
+        #     continue
+        print("True in process_images\n")
         entry = RAW_IMAGES_QUEUE.get()
         inline_print(0, RAW_IMAGES_QUEUE.qsize())
         raw_time = entry['raw_image_time']
@@ -141,9 +145,12 @@ def display_images(max_display_delay):
     Args:
         max_display_delay: Allowed delay before displaying an incoming image.
     """
-
     num_display_skips = 0
     while True:
+        if(PROCESSED_IMAGES_QUEUE.empty()):
+            # print("Processed queue empty")
+            continue
+        print("True in display_images")
         entry = PROCESSED_IMAGES_QUEUE.get()
         inline_print(3, PROCESSED_IMAGES_QUEUE.qsize())
         raw_time = entry['raw_image_time']
@@ -215,6 +222,7 @@ class SpotImageCapture:
             camera: String identifier of the camera to use.
         """
         while True:
+            print("True in capture_images")
             images_response = self.image_client.get_image_from_sources(self.source_list)
             for image_response in images_response:
                 source = image_response.source.name
@@ -280,16 +288,19 @@ def main(argv):
             print("ERROR, could not find model file " + str(options.model_path))
             sys.exit(1)
 
+        print("Creating image capture object..")
         image_capture = SpotImageCapture()
         image_capture.initialize_sdk_no_motor_control(options.hostname,
                                                       options.username, options.password)
 
         # Start Tensorflow processes
+        print("Starting Tensorflow processes..")
         start_tensorflow_processes(options.number_tensorflow_processes, options.model_path,
                                    detection_classes, options.detection_threshold,
                                    options.max_processing_delay)
 
         # Start Display process
+        print("Starting display process..")
         process = Process(target=display_images, args=(options.max_display_delay,))
         process.start()
 
@@ -299,7 +310,8 @@ def main(argv):
             Processing_Delay\tDisplay_Delay\t\tTotal_Delay\t\tDisplay_Skips\tProcessing_Skips")
         # Start the ingestion of images from the Spot in this main process
         image_capture.capture_images(options.sleep_between_capture)
-
+        # proc = Process(target = image_capture.capture_images, args=(options.sleep_between_capture,))
+        # proc.start()
         return True
     except Exception as exc:  # pylint: disable=broad-except
         logger = bosdyn.client.util.get_logger()

@@ -65,6 +65,7 @@ def hello_spot(config):
             # Now, we are ready to power on the robot. This call will block until the power
             # is on. Commands would fail if this did not happen. We can also check that the robot is
             # powered at any point.
+			
             robot.logger.info("Powering on robot... This may take several seconds.")
             robot.power_on(timeout_sec=20)
             assert robot.is_powered_on(), "Robot power on failed."

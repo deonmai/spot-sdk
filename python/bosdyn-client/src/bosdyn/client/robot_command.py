@@ -28,7 +28,7 @@ from bosdyn.util import seconds_to_duration
 
 from bosdyn.client.common import (BaseClient, error_factory, error_pair, handle_unset_status_error,
                                   handle_common_header_errors, handle_lease_use_result_errors)
-
+  
 from .exceptions import ResponseError, InvalidRequestError, TimedOutError, UnsetStatusError
 from .exceptions import Error as BaseError
 from .frame_helpers import BODY_FRAME_NAME, ODOM_FRAME_NAME, get_se2_a_tform_b

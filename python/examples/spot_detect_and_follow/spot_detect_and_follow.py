@@ -42,7 +42,7 @@ from bosdyn.client.robot_state import RobotStateClient
 from tensorflow_object_detection import DetectorAPI
 
 LOGGER = bosdyn.client.util.get_logger()
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # Don't let the queues get too backed up
 QUEUE_MAXSIZE = 10
 
@@ -215,6 +215,7 @@ def start_tensorflow_processes(num_processes, model_path, detection_class, detec
     """
 
     for counter in range(num_processes):
+        print("TPB in start_tensorflow_processes:", TENSORFLOW_PROCESS_BARRIER)
         process = Process(target=process_images, args=(
             model_path,
             detection_class,
@@ -237,12 +238,15 @@ def process_images(model_path, detection_class, detection_threshold, max_process
     odapi = DetectorAPI(path_to_ckpt=model_path)
     num_processed_skips = 0
 
+    print("TPB in process_images:", TENSORFLOW_PROCESS_BARRIER)
     if TENSORFLOW_PROCESS_BARRIER is None:
+        print("Tensorflow process barrier is none")
         return
 
     try:
         TENSORFLOW_PROCESS_BARRIER.wait()
     except BrokenBarrierError as exc:
+        print("In process_images()", TENSORFLOW_PROCESS_BARRIER.n_waiting)
         print(f'Error waiting for Tensorflow processes to initialize: {exc}')
         return False
 
@@ -554,16 +558,20 @@ def main(argv):
         _check_and_load_json_classes(options.classes)
 
         global TENSORFLOW_PROCESS_BARRIER # pylint: disable=global-statement
-        TENSORFLOW_PROCESS_BARRIER = Barrier(options.number_tensorflow_processes + 1)
+        TENSORFLOW_PROCESS_BARRIER = Barrier(options.number_tensorflow_processes + 1, timeout=10)
+        print("TPB:", TENSORFLOW_PROCESS_BARRIER)
         # Start Tensorflow processes
         start_tensorflow_processes(options.number_tensorflow_processes, options.model_path,
                                    options.detection_class, options.detection_threshold,
                                    options.max_processing_delay)
 
         # sleep to give the Tensorflow processes time to initialize
+        # time.sleep(5)
         try:
+            print(TENSORFLOW_PROCESS_BARRIER.wait())
             TENSORFLOW_PROCESS_BARRIER.wait()
         except BrokenBarrierError as exc:
+            print("n_waiting:", TENSORFLOW_PROCESS_BARRIER.n_waiting)
             print(f'Error waiting for Tensorflow processes to initialize: {exc}')
             return False
         # Start the API related things
